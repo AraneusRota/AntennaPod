@@ -56,10 +56,12 @@ import de.danoeh.antennapod.core.event.FeedListUpdateEvent;
 import de.danoeh.antennapod.core.event.PlaybackPositionEvent;
 import de.danoeh.antennapod.core.event.PlayerStatusEvent;
 import de.danoeh.antennapod.core.event.UnreadItemsUpdateEvent;
-import de.danoeh.antennapod.model.feed.Feed;
+import de.danoeh.antennapod.core.util.NetworkUtils;
+import de.danoeh.antennapod.core.util.comparator.FeedItemPubdateComparator;
+import de.danoeh.antennapod.core.util.playback.PlaybackServiceStarter;
+import de.danoeh.antennapod.dialog.*;
+import de.danoeh.antennapod.model.feed.*;
 import de.danoeh.antennapod.core.feed.FeedEvent;
-import de.danoeh.antennapod.model.feed.FeedItem;
-import de.danoeh.antennapod.model.feed.FeedItemFilter;
 import de.danoeh.antennapod.core.glide.ApGlideSettings;
 import de.danoeh.antennapod.core.glide.FastBlurTransformation;
 import de.danoeh.antennapod.core.service.download.DownloadService;
@@ -85,6 +87,10 @@ import io.reactivex.Observable;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.schedulers.Schedulers;
+
+import static de.danoeh.antennapod.core.util.CollectionsUtil.filter;
+import static java.util.Collections.reverseOrder;
+import static java.util.Collections.sort;
 
 /**
  * Displays a list of FeedItems.
@@ -333,8 +339,33 @@ public class FeedItemlistFragment extends Fragment implements AdapterView.OnItem
                 RemoveFeedDialog.show(getContext(), feed, () ->
                         ((MainActivity) getActivity()).loadFragment(EpisodesFragment.TAG, null));
                 return true;
+            case R.id.play_feed_item:
+                List<FeedItem> unplayed = filter(feed.getItems(), i -> !i.isPlayed());
+                if (unplayed.isEmpty()) {
+                    return true;
+                }
+                DBWriter.clearQueue();
+                sort(unplayed, reverseOrder(new FeedItemPubdateComparator()));
+                DBWriter.addQueueItem(getContext(), unplayed.toArray(new FeedItem[0]));
+                startPlayback(unplayed.get(0).getMedia());
+                return true;
             default:
                 return false;
+        }
+    }
+
+    private void startPlayback(FeedMedia media) {
+        if (media == null) {
+            return;
+        }
+        if (!media.fileExists() && !NetworkUtils.isStreamingAllowed()) {
+            new StreamingConfirmationDialog(getContext(), media).show();
+        } else {
+            new PlaybackServiceStarter(getContext(), media)
+                    .callEvenIfRunning(true)
+                    .startWhenPrepared(true)
+                    .shouldStream(!media.fileExists())
+                    .start();
         }
     }
 

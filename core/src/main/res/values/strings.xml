@@ -177,6 +177,7 @@
     <string name="open_podcast">Open Podcast</string>
     <string name="please_wait_for_data">Please wait until the data is loaded</string>
     <string name="updates_disabled_label">Updates disabled</string>
+    <string name="play_feed_label">Play (Clears queue)</string>
 
     <!-- actions on feeditems -->
     <string name="download_label">Download</string>

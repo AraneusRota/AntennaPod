@@ -79,4 +79,11 @@
         custom:showAsAction="collapseActionView">
     </item>
 
+    <item
+            android:id="@+id/play_feed_item"
+            android:menuCategory="container"
+            android:title="@string/play_feed_label"
+            custom:showAsAction="collapseActionView">
+    </item>
+
 </menu>
